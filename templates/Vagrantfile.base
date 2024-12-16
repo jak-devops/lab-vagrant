@@ -1,0 +1,55 @@
+Vagrant.configure("2") do |config|
+  # Nom de la box utilisée (Ubuntu 22.04 par défaut)
+  config.vm.box = "ubuntu/jammy64"
+
+  # Nom de la machine
+  config.vm.hostname = "complete-template"
+
+  # Réseau
+  config.vm.network "private_network", type: "dhcp" # Réseau privé avec DHCP
+  config.vm.network "public_network" # Connecter à un réseau public
+  config.vm.network "forwarded_port", guest: 80, host: 8080 # Redirection de port
+
+  # Configuration du fournisseur VirtualBox
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "VagrantTemplate"  # Nom dans VirtualBox
+    vb.memory = "2048"           # RAM en Mo
+    vb.cpus = 2                  # Nombre de CPU
+    vb.gui = false               # Mode graphique désactivé
+  end
+
+  # Provisioning : Script Shell pour l'installation initiale
+  config.vm.provision "shell", inline: <<-SHELL
+    sudo apt update && sudo apt upgrade -y
+    sudo apt install -y vim git curl
+  SHELL
+
+  # Synchronisation de dossier
+  config.vm.synced_folder "./data", "/vagrant_data", type: "virtualbox", owner: "vagrant", group: "vagrant"
+
+  # Variables d'environnement
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "export APP_ENV=development" >> /home/vagrant/.bashrc
+    source /home/vagrant/.bashrc
+  SHELL
+
+  # Gestionnaire d'exécution parallèle
+  config.vm.post_up_message = "VM démarrée avec succès. Vous pouvez vous connecter avec 'vagrant ssh'."
+
+  # Options avancées
+  config.vm.network "private_network", type: "dhcp", auto_config: true
+  config.vm.provider "virtualbox" do |vb|
+    vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+  end
+
+  # Exemple d'ajout d'une deuxième machine
+  # config.vm.define "additional_vm" do |additional_vm|
+  #   additional_vm.vm.box = "ubuntu/jammy64"
+  #   additional_vm.vm.hostname = "additional-template"
+  #   additional_vm.vm.network "private_network", type: "dhcp"
+  #   additional_vm.vm.provider "virtualbox" do |vb|
+  #     vb.memory = "1024"
+  #     vb.cpus = 1
+  #   end
+  # end
+end
